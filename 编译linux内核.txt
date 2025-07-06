@@ -1,0 +1,72 @@
+# 【【教程】带你编译内核，手搓自己的Linux发行版！】https://www.bilibili.com/video/BV1bFNSeREvV?p=2&vd_source=047c60f35e3e7f353f78970f0f736583
+
+sudo apt-get update
+sudo apt-get install libelf-dev
+sudo apt-get install build-essential libncurses-dev bison flex libssl-dev libelf-dev bc rsync
+
+# 安装需要的依赖包
+
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.15.4.tar.xz
+
+# 下载linux内核
+
+tar -xf linux-6.15.4.tar.xz
+
+cd linux-6.15.4
+
+make defconfig
+
+make -j8
+
+apt install qemu-system
+
+qemu-system-x86_64 -kernel arch/x86/boot/bzImage
+
+# qemu-system-x86_64 -kernel arch/x86/boot/bzImage -nographic  (没有显示器)
+
+ldd hhxy.out # 查看动态链接
+
+gcc hello.cpp -o hhxy.out -static
+
+du -sh hhxy.out (查看大小)
+
+
+mv hhxy.out init (重命名为init linux内核启动搜索的名) 
+
+echo "init" | cpio -H newc -o > init.cpio
+
+
+qemu-system-x86_64 -kernel ../linux-6.15.4/arch/x86/boot/bzImage  -initrd init.cpio  （执行命令）
+
+
+wget https://www.busybox.net/downloads/busybox-1.37.0.tar.bz2
+
+
+make menuconfig
+
+make install CONFIG_PREFIX=../busybox/
+
+dd if=/dev/zero of=linux.img bs=1M count=512
+
+gdisk linux.img
+
+
+sudo losetup -f -P linux.img
+lsblk
+
+grub-install --target=x86_64-efi --efi-directory=$(realpath mnt) --bootloader-id=GRUB --removable --recheck
+
+
+sudo apt install grub-efi-amd64-bin
+losetup -d /dev/loop0
+
+qemu-system-x86_64 -drive file=./linux.img -bios /usr/share/ovmf/OVMF.fd -m 1G -serial stdio
+
+
+
+root@xiaorui-PC:/home/xiaorui/linux-core# qemu-system-x86_64 -drive file=./linux.img -bios /usr/share/ovmf/OVMF.fd -m 1G -serial stdio
+
+
+U盘启动：
+dd if=linux.img of=/dev/sda
+sync
